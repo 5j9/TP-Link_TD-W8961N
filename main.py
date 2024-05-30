@@ -1,5 +1,6 @@
 from json import loads
 from pathlib import Path
+from typing import Literal
 
 from playwright.sync_api import sync_playwright, Page, ElementHandle
 
@@ -26,27 +27,23 @@ class Router:
         page.keyboard.type(self.password)
         page.keyboard.press('Enter')
 
-    def statistics(self) -> dict:
+    def statistics(
+        self, interface: Literal['Ethernet', 'ADSL', 'WLAN']
+    ) -> dict:
         page = self.page
-        page.goto(self.url + 'rpSys.html')
-        page.frame('navigation').get_by_text('Statistics').click()
-        main = page.frame('main')
-
-        result = {}
-
-        for name, radio_selector in (
-            ('Ethernet', 'input[value="Zero"]'),
-            ('ADSL', 'input[value="One"]'),
-            ('WLAN', 'input[value="Two"]'),
-        ):
-            main.click(radio_selector)
-            table_selector = 'table[bordercolor="#CCCCCC"]'
-            main.wait_for_selector(table_selector)
-            table = main.query_selector(table_selector)
-            data = _extract_column_data_from_table(table)
-            result[name] = data
-
-        return result
+        page.goto(
+            self.url + 'status/status_statistics.htm',
+            referer='http://192.168.1.1/',
+        )
+        radio_value = {'Ethernet': 'Zero', 'ADSL': 'One', 'WLAN': 'Two'}[
+            interface
+        ]
+        radio_selector = f'input[value="{radio_value}"]'
+        page.click(radio_selector)
+        table_selector = 'table[bordercolor="#CCCCCC"]'
+        page.wait_for_selector(table_selector)
+        table = page.query_selector(table_selector)
+        return _extract_column_data_from_table(table)
 
 
 def _extract_col_from_trs(trs: list[ElementHandle], col: int) -> list:
@@ -89,7 +86,7 @@ with sync_playwright() as playwright:
         username=config['username'], password=config['password'], page=page
     )
     router.login()
-    statistics = router.statistics()
+    statistics = router.statistics('WLAN')
     print(statistics)
 
     browser.close()

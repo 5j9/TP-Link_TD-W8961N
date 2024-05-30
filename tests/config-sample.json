@@ -1,0 +1,6 @@
+{
+  "username": "admin",
+  "password": "admin",
+  "headless": true,
+  "args": ["--start-maximized"]
+}

@@ -39,7 +39,8 @@ class Router:
             interface
         ]
         radio_selector = f'input[value="{radio_value}"]'
-        page.click(radio_selector)
+        if not page.wait_for_selector(radio_selector).is_checked():
+            page.click(radio_selector)
         table_selector = 'table[bordercolor="#CCCCCC"]'
         page.wait_for_selector(table_selector)
         table = page.query_selector(table_selector)

@@ -33,7 +33,7 @@ class Router:
         self.playwright.stop()
 
     def goto(self, path: str) -> Response:
-        return self.page.goto(self.url + path, referer='http://192.168.1.1/')
+        return self.page.goto(self.url + path, referer=self.url)
 
     def login(self):
         self.goto('login_security.html')

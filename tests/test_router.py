@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pytest import fixture
 from json import loads
 from pathlib import Path
@@ -38,3 +40,10 @@ def test_device_info(router):
         'WAN',
         'ADSL',
     }
+
+
+def test_system_log(router):
+    entries = router.system_log()
+    for dt, msg in entries:
+        assert type(dt) is datetime
+        assert type(msg) is str

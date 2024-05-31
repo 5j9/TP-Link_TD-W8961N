@@ -1,7 +1,8 @@
+from datetime import datetime
 from re import findall, search
 from typing import Literal
 
-from playwright.sync_api import sync_playwright, Page, ElementHandle
+from playwright.sync_api import sync_playwright, Page, ElementHandle, Response
 
 
 class Router:
@@ -31,9 +32,12 @@ class Router:
         self.browser.close()
         self.playwright.stop()
 
+    def goto(self, path: str) -> Response:
+        return self.page.goto(self.url + path, referer='http://192.168.1.1/')
+
     def login(self):
+        self.goto('login_security.html')
         page = self.page
-        page.goto(self.url + 'login_security.html')
         page.keyboard.type(self.username)
         page.keyboard.press('Tab')
         page.keyboard.type(self.password)
@@ -42,15 +46,12 @@ class Router:
     def statistics(
         self, interface: Literal['Ethernet', 'ADSL', 'WLAN']
     ) -> dict[str, int]:
-        page = self.page
-        page.goto(
-            self.url + 'status/status_statistics.htm',
-            referer='http://192.168.1.1/',
-        )
+        self.goto('status/status_statistics.htm')
         radio_value = {'Ethernet': 'Zero', 'ADSL': 'One', 'WLAN': 'Two'}[
             interface
         ]
         radio_selector = f'input[value="{radio_value}"]'
+        page = self.page
         if not page.wait_for_selector(radio_selector).is_checked():
             page.click(radio_selector)
         table_selector = 'table[bordercolor="#CCCCCC"]'
@@ -60,7 +61,7 @@ class Router:
 
     def device_info(self) -> dict:
         page = self.page
-        page.goto(self.url + 'status/status_deviceinfo.htm')
+        self.goto('status/status_deviceinfo.htm')
         page.get_by_text('Firmware Version')
         it = page.inner_text('body')
         d = dict(findall(r'(\S.*?)\s*:\s*(\S+.*?)\s*\n', it))
@@ -115,6 +116,15 @@ class Router:
                 },
             },
         }
+
+    def system_log(self) -> list[tuple[datetime, str]]:
+        self.goto('status/status_log.htm')
+        log = self.page.input_value('textarea')
+        entries = []
+        for line in log.splitlines():
+            dt, _, msg = line.partition('> ')
+            entries.append((datetime.strptime(dt, '%m/%d/%Y %H:%M:%S'), msg))
+        return entries
 
 
 def _nnu(s: str) -> tuple[int | float, int | float, str]:
